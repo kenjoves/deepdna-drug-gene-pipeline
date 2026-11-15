@@ -1,0 +1,56 @@
+name: Weekly data refresh
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"   # every Monday at 06:00 UTC
+  workflow_dispatch:       # also lets you run it by hand from the Actions tab
+
+permissions:
+  contents: write          # needed to commit the updated database
+
+concurrency:
+  group: data-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-pipeline.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements-pipeline.txt
+
+      - name: Run the pipeline
+        run: |
+          set +e
+          python pipeline.py run --strict
+          code=$?
+          if [ "$code" -eq 2 ]; then
+            # finished, but a quality check warned: keep the data and flag it
+            echo "::warning title=Quality checks::The run finished, but a quality check raised a warning. Read the log above."
+          elif [ "$code" -ne 0 ]; then
+            exit "$code"
+          fi
+
+      - name: Trim old runs
+        run: python pipeline.py prune --keep 52 --keep-raw 2
+
+      - name: Commit the updated database
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add deepdna.db
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Refresh data: $(date -u +%Y-%m-%d)"
+            git push
+          fi
