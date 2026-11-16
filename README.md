@@ -4,7 +4,7 @@ A data pipeline and dashboard for pharmacogenomics reference data. It pulls gene
 
 [![Weekly data refresh](https://github.com/kenjoves/deepdna-drug-gene-pipeline/actions/workflows/weekly-refresh.yml/badge.svg)](https://github.com/kenjoves/deepdna-drug-gene-pipeline/actions/workflows/weekly-refresh.yml)
 
-**[Live dashboard](https://YOUR-APP.streamlit.app)**
+**[Live dashboard](https://deepdna-kj.streamlit.app/)**
 
 ![Dashboard overview](docs/dashboard.png)
 
